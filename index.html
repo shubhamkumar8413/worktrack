@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkTrack - वर्कर अटेंडेंस पोर्टल</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Header (Strictly Worker Only - No Admin Links) -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
+                        <i class="fa-solid fa-hard-hat text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">WorkTrack</h1>
+                        <p class="text-xs text-gray-500">कर्मचारी उपस्थिति और ओवरटाइम</p>
+                    </div>
+                </div>
+                <span class="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Worker Portal Content -->
+    <main class="flex-grow max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+        
+        <!-- Search / ID Input Box -->
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-id-card-clip"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900">अपना रिकॉर्ड देखें</h2>
+            <p class="text-sm text-gray-500 mt-1 mb-6">अपने <strong>मौजूदा महीने (Present Month)</strong> की उपस्थिति और ओवरटाइम देखने के लिए अपनी <strong>यूनिक आईडी (Unique ID)</strong> डालें।</p>
+
+            <form onsubmit="handleWorkerLookup(event)" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <input type="text" id="lookup-worker-id" required placeholder="अपनी ID डालें (जैसे: EMP-101)" class="flex-grow px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base uppercase font-mono text-center sm:text-left">
+                <button type="submit" id="btn-search-worker" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition flex items-center justify-center gap-2 shrink-0">
+                    <i class="fa-solid fa-magnifying-glass"></i> डिटेल देखें
+                </button>
+            </form>
+        </div>
+
+        <!-- Worker Profile & Report Card (Live Updating) -->
+        <div id="worker-result-card" class="hidden bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden transition-all">
+            <!-- Top Profile Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold border border-white/30">
+                            <span id="res-avatar">W</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 id="res-name" class="text-xl font-bold">वर्कर का नाम</h3>
+                                <span id="res-id-badge" class="bg-white/20 text-white text-xs font-mono px-2.5 py-0.5 rounded-full border border-white/20">ID</span>
+                            </div>
+                            <p id="res-position" class="text-blue-100 text-sm mt-0.5"><i class="fa-solid fa-briefcase mr-1"></i> पोजीशन</p>
+                        </div>
+                    </div>
+                    <div class="bg-white/15 px-3.5 py-2 rounded-xl border border-white/20 text-left sm:text-right w-full sm:w-auto">
+                        <p class="text-xs text-blue-100">रिपोर्ट महीना (Present Month)</p>
+                        <p id="res-current-month" class="text-sm font-bold mt-0.5">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Month Range & Last Updated Bar -->
+            <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2 text-xs text-gray-600">
+                <div>
+                    <i class="fa-regular fa-calendar-check text-blue-600 mr-1"></i> अवधि: <strong id="res-month-range" class="text-gray-800">--</strong>
+                </div>
+                <div>
+                    अंतिम अपडेट: <span id="res-last-updated" class="font-medium text-gray-800">--</span>
+                </div>
+            </div>
+
+            <!-- Main Attendance Metrics Grid -->
+            <div class="p-6">
+                <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">इस महीने का काम और उपस्थिति</h4>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Present Box -->
+                    <div class="bg-emerald-50/70 border border-emerald-100 p-4 rounded-2xl text-center">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <p class="text-xs font-medium text-emerald-800">कुल प्रेजेंट (Present)</p>
+                        <p id="res-present" class="text-2xl font-extrabold text-emerald-700 mt-1">0 दिन</p>
+                    </div>
+
+                    <!-- Absent Box -->
+                    <div class="bg-rose-50/70 border border-rose-100 p-4 rounded-2xl text-center">
+                        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+                        <p class="text-xs font-medium text-rose-800">कुल एब्सेंट (Absent)</p>
+                        <p id="res-absent" class="text-2xl font-extrabold text-rose-700 mt-1">0 दिन</p>
+                    </div>
+
+                    <!-- Overtime Box -->
+                    <div class="bg-amber-50/70 border border-amber-100 p-4 rounded-2xl text-center">
+                        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-business-time"></i>
+                        </div>
+                        <p class="text-xs font-medium text-amber-800">कुल ओवरटाइम (Overtime)</p>
+                        <p id="res-overtime" class="text-2xl font-extrabold text-amber-700 mt-1">0 घंटे</p>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Status Note -->
+                <div class="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-check text-blue-600 text-lg"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">अंतिम स्टेटस (Latest Status)</p>
+                            <p id="res-latest-note" class="text-xs text-gray-500">--</p>
+                        </div>
+                    </div>
+                    <span id="res-status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                        Active
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Not Found Message -->
+        <div id="worker-not-found" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center">
+            <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i>
+            <h3 class="text-base font-bold text-rose-800">यह यूनिक आईडी नहीं मिली!</h3>
+            <p class="text-sm text-rose-600 mt-1">कृपया सही ID डालें या अपनी कंपनी के एडमिन से संपर्क करें।</p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-4 mt-auto">
+        <div class="max-w-3xl mx-auto px-4 text-center text-xs text-gray-500">
+            WorkTrack &bull; केवल मौजूदा महीने (Present Month) का लाइव रिकॉर्ड
+        </div>
+    </footer>
+
+    <!-- Firebase SDK & Live Worker Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Your Live Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWf2m_9KWGDxvMP_7ZoPeZdoQMrNpR4es",
+            authDomain: "worktrack-2f109.firebaseapp.com",
+            projectId: "worktrack-2f109",
+            storageBucket: "worktrack-2f109.firebasestorage.app",
+            messagingSenderId: "270307387944",
+            appId: "1:270307387944:web:2356815318c079624fa31d",
+            measurementId: "G-YBEK11Z0KY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let unsubscribeWorker = null;
+
+        // Auto-load saved ID if worker searched previously on this phone
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedId = localStorage.getItem('worktrack_saved_worker_id');
+            if (savedId) {
+                document.getElementById('lookup-worker-id').value = savedId;
+                subscribeToWorker(savedId);
+            }
+        });
+
+        window.handleWorkerLookup = function(event) {
+            event.preventDefault();
+            const inputId = document.getElementById('lookup-worker-id').value.trim().toUpperCase();
+            if (!inputId) return;
+            subscribeToWorker(inputId);
+        };
+
+        function subscribeToWorker(workerId) {
+            const btn = document.getElementById('btn-search-worker');
+            const resultCard = document.getElementById('worker-result-card');
+            const notFoundCard = document.getElementById('worker-not-found');
+
+            // Unsubscribe previous listener if any
+            if (unsubscribeWorker) {
+                unsubscribeWorker();
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> खोज रहे हैं...`;
+
+            // Listen to live updates for this specific worker ID
+            unsubscribeWorker = onSnapshot(doc(db, "workers", workerId), (docSnap) => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> डिटेल देखें`;
+
+                if (!docSnap.exists()) {
+                    resultCard.classList.add('hidden');
+                    notFoundCard.classList.remove('hidden');
+                    return;
+                }
+
+                // Save ID in phone for convenience next time
+                localStorage.setItem('worktrack_saved_worker_id', workerId);
+
+                const worker = docSnap.data();
+                notFoundCard.classList.add('hidden');
+                resultCard.classList.remove('hidden');
+
+                // Check Present Month
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const isSameMonth = worker.monthKey === currentMonthKey;
+
+                const presentDays = isSameMonth ? (worker.presentDays || 0) : 0;
+                const absentDays = isSameMonth ? (worker.absentDays || 0) : 0;
+                const overtimeHours = isSameMonth ? (worker.overtimeHours || 0) : 0;
+
+                // Populate Profile
+                document.getElementById('res-avatar').innerText = worker.name.charAt(0).toUpperCase();
+                document.getElementById('res-name').innerText = worker.name;
+                document.getElementById('res-id-badge').innerText = worker.id;
+                document.getElementById('res-position').innerHTML = `<i class="fa-solid fa-briefcase mr-1"></i> ${worker.position}`;
+
+                // Month & Date Range (1st of month to Today)
+                const monthName = now.toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' });
+                const todayDate = now.getDate();
+                const shortMonth = now.toLocaleDateString('hi-IN', { month: 'short' });
+
+                document.getElementById('res-current-month').innerText = monthName;
+                document.getElementById('res-month-range').innerText = `1 ${shortMonth} से ${todayDate} ${shortMonth} तक (${todayDate} दिन)`;
+                document.getElementById('res-last-updated').innerText = worker.lastUpdated || "--";
+
+                // Metrics
+                document.getElementById('res-present').innerText = `${presentDays} दिन`;
+                document.getElementById('res-absent').innerText = `${absentDays} दिन`;
+                document.getElementById('res-overtime').innerText = `${overtimeHours} घंटे`;
+
+                // Status Badge
+                const latestStatus = isSameMonth ? (worker.lastStatus || "Active") : "नया महीना शुरू";
+                document.getElementById('res-latest-note').innerText = `अंतिम एंट्री: ${latestStatus}`;
+                const statusBadge = document.getElementById('res-status-badge');
+                if (latestStatus.includes('Absent')) {
+                    statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
+                    statusBadge.innerText = "Absent";
+                } else {
+                    statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700";
+                    statusBadge.innerText = "Present";
+                }
+            }, (error) => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> डिटेल देखें`;
+                console.error("Worker Lookup Error:", error);
+            });
+        }
+    </script>
+</body>
+                  </html>
