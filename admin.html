@@ -31,10 +31,10 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <h2 class="text-xl font-bold text-gray-900">एडमिन लॉगिन (Admin Only)</h2>
-            <p class="text-xs text-gray-500 mt-1 mb-6">आगे बढ़ने के लिए अपना एडमिन PIN डालें (डिफ़ॉल्ट PIN: <strong>1234</strong>)</p>
+            <p class="text-xs text-gray-500 mt-1 mb-6">आगे बढ़ने के लिए अपना एडमिन पासवर्ड डालें</p>
             
             <form onsubmit="verifyAdminPin(event)" class="space-y-4">
-                <input type="password" id="admin-pin-input" maxlength="8" required placeholder="••••" class="w-full text-center tracking-widest text-2xl font-bold px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="password" id="admin-pin-input" required placeholder="पासवर्ड डालें" class="w-full text-center tracking-wider text-lg font-bold px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-sm transition">
                     अनलॉक करें <i class="fa-solid fa-arrow-right ml-1"></i>
                 </button>
@@ -190,20 +190,60 @@
 
                             <!-- Update Controls -->
                             <form onsubmit="submitSelectedWorkerAttendance(event)" class="pt-4 space-y-4">
+                                <!-- Date Selection Box (For Marking or Editing Specific Date) -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">तारीख चुनें (Date)</label>
+                                        <span id="date-edit-badge" class="hidden text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                                            <i class="fa-solid fa-pen-to-square mr-1"></i> पुरानी एंट्री एडिट मोड
+                                        </span>
+                                    </div>
+                                    <input type="date" id="selected-att-date" onchange="loadDateRecordForSelectedWorker()" required class="w-full bg-white px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-semibold text-gray-800">
+                                    <p class="text-[11px] text-gray-500 mt-1">किसी पुरानी तारीख (जैसे कल) का ओवरटाइम जोड़ने या बदलने के लिए वह तारीख चुनें।</p>
+                                </div>
+
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <!-- Attendance Radio Selection -->
                                     <div>
-                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">आज की उपस्थिति (Attendance)</label>
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">उपस्थिति (Status)</label>
                                         <div class="grid grid-cols-2 gap-2">
                                             <label class="flex items-center justify-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-gray-200 hover:border-emerald-400 transition">
                                                 <input type="radio" name="selected-att" value="present" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                                                <span class="text-sm font-bold text-emerald-700">Present (+1)</span>
+                                                <span class="text-sm font-bold text-emerald-700">Present</span>
                                             </label>
                                             <label class="flex items-center justify-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-gray-200 hover:border-rose-400 transition">
                                                 <input type="radio" name="selected-att" value="absent" class="text-rose-600 focus:ring-rose-500 w-4 h-4">
-                                                <span class="text-sm font-bold text-rose-700">Absent (+1)</span>
+                                                <span class="text-sm font-bold text-rose-700">Absent</span>
                                             </label>
                                         </div>
+                                    </div>
+
+                                    <!-- Overtime Input -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">उस दिन का ओवरटाइम (OT)</label>
+                                        <div class="relative">
+                                            <input type="number" id="selected-ot-input" min="0" max="24" step="0.5" value="0" class="w-full bg-white px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-base font-bold text-amber-700">
+                                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">घंटे (Hrs)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+                                    <button type="button" onclick="deleteSelectedWorker()" class="w-full sm:w-auto text-xs text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-lg font-medium transition">
+                                        <i class="fa-solid fa-trash-can mr-1"></i> इस वर्कर को हटाएं
+                                    </button>
+                                    <button type="submit" id="btn-submit-att" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> सेव / अपडेट करें
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Recent Date-by-Date History inside Admin for Quick Check -->
+                            <div class="mt-5 pt-4 border-t border-blue-100">
+                                <p class="text-xs font-bold text-gray-700 mb-2">इस महीने की हालिया तारीखें (एडिट करने के लिए तारीख पर क्लिक करें):</p>
+                                <div id="admin-worker-recent-logs" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
                                     </div>
 
                                     <!-- Overtime Input -->
@@ -262,9 +302,18 @@
         const db = getFirestore(app);
         const workersCol = collection(db, "workers");
 
-        // Admin PIN (आप इसे यहाँ बदल सकते हैं)
-        const ADMIN_PIN = "1234";
+        // Admin Password
+        const ADMIN_PIN = "Omkar@2020";
         let workersList = [];
+
+        // Helper to get Today's YYYY-MM-DD in Local Time
+        function getTodayDateString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
         // Check if already unlocked in this session
         if (sessionStorage.getItem("worktrack_admin_unlocked") === "true") {
@@ -279,7 +328,7 @@
                 unlockUI();
                 showToast("एडमिन पैनल अनलॉक हो गया!", "success");
             } else {
-                showToast("गलत PIN! कृपया सही PIN डालें।", "error");
+                showToast("गलत पासवर्ड! कृपया सही पासवर्ड डालें।", "error");
                 document.getElementById('admin-pin-input').value = "";
             }
         };
@@ -359,6 +408,7 @@
                     presentDays: 0,
                     absentDays: 0,
                     overtimeHours: 0,
+                    dailyLogs: {},
                     lastStatus: "नया जुड़ा (Newly Added)",
                     lastUpdated: "अभी-अभी"
                 };
@@ -424,11 +474,76 @@
             document.getElementById('sel-curr-absent').innerText = isSameMonth ? worker.absentDays : 0;
             document.getElementById('sel-curr-ot').innerText = isSameMonth ? `${worker.overtimeHours}h` : '0h';
 
+            // Set default date to Today if empty
+            const dateInput = document.getElementById('selected-att-date');
+            if (!dateInput.value) {
+                dateInput.value = getTodayDateString();
+            }
+
+            loadDateRecordForSelectedWorker();
+            renderAdminQuickDateChips(worker, currentMonthKey);
+
             emptyMsg.classList.add('hidden');
             formContainer.classList.remove('hidden');
         };
 
-        // Submit Attendance & Overtime to Live Firebase
+        // Load existing record when Admin selects/changes a date (for Editing OT or Status)
+        window.loadDateRecordForSelectedWorker = function() {
+            const selectedId = document.getElementById('admin-worker-select').value;
+            const dateVal = document.getElementById('selected-att-date').value;
+            const editBadge = document.getElementById('date-edit-badge');
+            const worker = workersList.find(w => w.id === selectedId);
+
+            if (!worker || !dateVal) return;
+
+            const logs = worker.dailyLogs || {};
+            if (logs[dateVal]) {
+                // Record exists for this date -> Populate for Editing!
+                const rec = logs[dateVal];
+                const radio = document.querySelector(`input[name="selected-att"][value="${rec.status}"]`);
+                if (radio) radio.checked = true;
+                document.getElementById('selected-ot-input').value = rec.ot || 0;
+                editBadge.classList.remove('hidden');
+            } else {
+                // Fresh date
+                document.querySelector('input[name="selected-att"][value="present"]').checked = true;
+                document.getElementById('selected-ot-input').value = 0;
+                editBadge.classList.add('hidden');
+            }
+        };
+
+        // Render clickable date chips in Admin panel for quick editing
+        function renderAdminQuickDateChips(worker, currentMonthKey) {
+            const container = document.getElementById('admin-worker-recent-logs');
+            const logs = worker.dailyLogs || {};
+            const monthDates = Object.keys(logs)
+                .filter(d => d.startsWith(currentMonthKey))
+                .sort((a, b) => b.localeCompare(a));
+
+            if (monthDates.length === 0) {
+                container.innerHTML = `<span class="text-xs text-gray-400">अभी इस महीने की कोई तारीख दर्ज नहीं है।</span>`;
+                return;
+            }
+
+            container.innerHTML = monthDates.map(d => {
+                const item = logs[d];
+                const dayNum = d.split('-')[2];
+                const colorClass = item.status === 'present' 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                    : 'bg-rose-100 text-rose-800 border-rose-200';
+                const otText = item.ot > 0 ? ` +${item.ot}h` : '';
+                return `<button type="button" onclick="selectSpecificDate('${d}')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${colorClass} hover:opacity-80 transition">
+                    ${dayNum} तारीख: ${item.status === 'present' ? 'P' : 'A'}${otText}
+                </button>`;
+            }).join('');
+        }
+
+        window.selectSpecificDate = function(dateStr) {
+            document.getElementById('selected-att-date').value = dateStr;
+            loadDateRecordForSelectedWorker();
+        };
+
+        // Submit or Edit Date-wise Attendance & Overtime to Live Firebase
         window.submitSelectedWorkerAttendance = async function(event) {
             event.preventDefault();
             
@@ -437,40 +552,53 @@
             const worker = workersList.find(w => w.id === workerId);
             if (!worker) return;
 
+            const selectedDate = document.getElementById('selected-att-date').value;
+            if (!selectedDate) {
+                showToast("कृपया तारीख चुनें!", "error");
+                return;
+            }
+
             const selectedStatus = document.querySelector('input[name="selected-att"]:checked').value;
-            const addedOt = parseFloat(document.getElementById('selected-ot-input').value) || 0;
+            const otHours = parseFloat(document.getElementById('selected-ot-input').value) || 0;
             const btn = document.getElementById('btn-submit-att');
 
-            if (addedOt < 0) {
+            if (otHours < 0) {
                 showToast("ओवरटाइम 0 से कम नहीं हो सकता!", "error");
                 return;
             }
 
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> अपडेट हो रहा है...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> सेव हो रहा है...`;
 
             try {
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const isSameMonth = worker.monthKey === currentMonthKey;
+                
+                // Update dailyLogs map for the chosen date (Creates new or Overwrites/Edits existing date)
+                const updatedLogs = { ...(worker.dailyLogs || {}) };
+                updatedLogs[selectedDate] = {
+                    status: selectedStatus,
+                    ot: otHours
+                };
 
-                // Start fresh if it's a new month, otherwise add to current month
-                let newPresent = isSameMonth ? (worker.presentDays || 0) : 0;
-                let newAbsent = isSameMonth ? (worker.absentDays || 0) : 0;
-                let newOt = isSameMonth ? (worker.overtimeHours || 0) : 0;
+                // Recalculate totals accurately from dailyLogs for the current month
+                let calcPresent = 0;
+                let calcAbsent = 0;
+                let calcOt = 0;
 
-                let statusText = "";
-                if (selectedStatus === 'present') {
-                    newPresent += 1;
-                    statusText = "Present";
-                } else {
-                    newAbsent += 1;
-                    statusText = "Absent";
-                }
+                Object.keys(updatedLogs).forEach(dateKey => {
+                    if (dateKey.startsWith(currentMonthKey)) {
+                        const entry = updatedLogs[dateKey];
+                        if (entry.status === 'present') calcPresent += 1;
+                        if (entry.status === 'absent') calcAbsent += 1;
+                        calcOt += (parseFloat(entry.ot) || 0);
+                    }
+                });
 
-                if (addedOt > 0) {
-                    newOt += addedOt;
-                    statusText += ` (+${addedOt} hrs OT)`;
+                const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+                let statusText = `${formattedDate}: ${selectedStatus === 'present' ? 'Present' : 'Absent'}`;
+                if (otHours > 0) {
+                    statusText += ` (+${otHours} hrs OT)`;
                 }
 
                 const dateStr = now.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
@@ -478,16 +606,18 @@
 
                 await updateDoc(doc(db, "workers", workerId), {
                     monthKey: currentMonthKey,
-                    presentDays: newPresent,
-                    absentDays: newAbsent,
-                    overtimeHours: newOt,
+                    presentDays: calcPresent,
+                    absentDays: calcAbsent,
+                    overtimeHours: calcOt,
+                    dailyLogs: updatedLogs,
                     lastStatus: statusText,
                     lastUpdated: `${dateStr}, ${timeStr}`
                 });
 
-                showToast(`${worker.name} (${worker.id}) का डेटा लाइव अपडेट हो गया!`, 'success');
+                showToast(`${worker.name} (${formattedDate}) का रिकॉर्ड सेव/अपडेट हो गया!`, 'success');
                 
-                // Reset dropdown & form for next entry
+                // Reset date to today & clear selection for next entry
+                document.getElementById('selected-att-date').value = getTodayDateString();
                 document.getElementById('selected-ot-input').value = 0;
                 document.querySelector('input[name="selected-att"][value="present"]').checked = true;
                 selectBox.value = "";
@@ -497,7 +627,7 @@
                 showToast("अपडेट करने में समस्या हुई!", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> लाइव सबमिट करें`;
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> सेव / अपडेट करें`;
             }
         };
 
@@ -570,4 +700,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
