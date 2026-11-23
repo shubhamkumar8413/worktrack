@@ -138,6 +138,20 @@
                         Active
                     </span>
                 </div>
+
+                <!-- Date-by-Date Attendance & Overtime History -->
+                <div class="mt-6 pt-5 border-t border-gray-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-days text-blue-600"></i> तारीख के अनुसार पूरा विवरण (Date-by-Date)
+                        </h4>
+                        <span class="text-[11px] text-gray-400">इस महीने का रिकॉर्ड</span>
+                    </div>
+                    
+                    <div id="res-daily-logs-list" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                        <!-- Date rows will be injected here -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -264,6 +278,51 @@
                     statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700";
                     statusBadge.innerText = "Present";
                 }
+
+                // Render Date-by-Date History List for Present Month
+                const logsListContainer = document.getElementById('res-daily-logs-list');
+                const dailyLogs = worker.dailyLogs || {};
+                const currentMonthDates = Object.keys(dailyLogs)
+                    .filter(dateKey => dateKey.startsWith(currentMonthKey))
+                    .sort((a, b) => b.localeCompare(a)); // Latest date first
+
+                if (currentMonthDates.length === 0) {
+                    logsListContainer.innerHTML = `
+                        <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-xs text-gray-500">
+                            इस महीने अभी तक किसी भी तारीख की एंट्री दर्ज नहीं हुई है।
+                        </div>
+                    `;
+                } else {
+                    logsListContainer.innerHTML = currentMonthDates.map(dateKey => {
+                        const entry = dailyLogs[dateKey];
+                        const dateObj = new Date(dateKey + 'T00:00:00');
+                        const formattedDate = dateObj.toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+                        const dayName = dateObj.toLocaleDateString('hi-IN', { weekday: 'long' });
+
+                        const isPresent = entry.status === 'present';
+                        const otHours = parseFloat(entry.ot) || 0;
+
+                        return `
+                            <div class="flex items-center justify-between p-3.5 rounded-xl border ${isPresent ? 'bg-emerald-50/40 border-emerald-100' : 'bg-rose-50/40 border-rose-100'}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm ${isPresent ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                        ${isPresent ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>'}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">${formattedDate}</p>
+                                        <p class="text-xs text-gray-500">${dayName}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right flex flex-col items-end gap-1">
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isPresent ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                        ${isPresent ? 'Present' : 'Absent'}
+                                    </span>
+                                    ${otHours > 0 ? `<span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md"><i class="fa-solid fa-clock mr-1"></i>+${otHours} घंटे OT</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
             }, (error) => {
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> डिटेल देखें`;
@@ -272,4 +331,4 @@
         }
     </script>
 </body>
-                  </html>
+</html>
