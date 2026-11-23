@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkTrack Admin - कंपनी एडमिन पैनल</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ========================================== -->
+    <!-- ADMIN PIN LOCK SCREEN (सुरक्षा लॉक)         -->
+    <!-- ========================================== -->
+    <div id="admin-lock-screen" class="fixed inset-0 bg-gray-900/95 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900">एडमिन लॉगिन (Admin Only)</h2>
+            <p class="text-xs text-gray-500 mt-1 mb-6">आगे बढ़ने के लिए अपना एडमिन PIN डालें (डिफ़ॉल्ट PIN: <strong>1234</strong>)</p>
+            
+            <form onsubmit="verifyAdminPin(event)" class="space-y-4">
+                <input type="password" id="admin-pin-input" maxlength="8" required placeholder="••••" class="w-full text-center tracking-widest text-2xl font-bold px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-sm transition">
+                    अनलॉक करें <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MAIN ADMIN DASHBOARD (Unlocked)            -->
+    <!-- ========================================== -->
+    <div id="admin-main-app" class="hidden flex-grow flex flex-col">
+        <!-- Top Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-30">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-2.5">
+                        <div class="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
+                            <i class="fa-solid fa-user-shield text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-lg sm:text-xl font-bold text-gray-900">WorkTrack Admin</h1>
+                                <span id="db-status-badge" class="text-[11px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-notch fa-spin"></i> जुड़ रहा है...
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 hidden sm:block">लाइव कंपनी डेटाबेस कंट्रोल पैनल</p>
+                        </div>
+                    </div>
+
+                    <button onclick="lockAdminPanel()" class="text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock"></i> लॉक करें
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            
+            <!-- Admin Stats Overview -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">कुल वर्कर (Total Workers)</p>
+                        <h3 id="stat-total-workers" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">इस महीने कुल प्रेजेंट</p>
+                        <h3 id="stat-total-present" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">इस महीने कुल ओवरटाइम</p>
+                        <h3 id="stat-total-overtime" class="text-2xl font-bold text-amber-600 mt-1">0 hrs</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Column: Add New Worker Form -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <i class="fa-solid fa-user-plus text-blue-600"></i>
+                            <h2 class="text-lg font-bold text-gray-900">नया वर्कर जोड़ें</h2>
+                        </div>
+                        
+                        <form id="add-worker-form" onsubmit="handleAddWorker(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">वर्कर का नाम <span class="text-red-500">*</span></label>
+                                <input type="text" id="worker-name" required placeholder="जैसे: रमेश कुमार" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">पोजीशन / पद <span class="text-red-500">*</span></label>
+                                <input type="text" id="worker-position" required placeholder="जैसे: मशीन ऑपरेटर, हेल्पर" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">यूनिक आईडी (Unique ID) <span class="text-red-500">*</span></label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="worker-id" required placeholder="जैसे: EMP-101" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm uppercase font-mono transition">
+                                    <button type="button" onclick="generateRandomId()" title="ऑटो आईडी बनाएं" class="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition shrink-0">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">यही ID वर्कर को दें ताकि वह अपने ऐप में रिकॉर्ड देख सके।</p>
+                            </div>
+
+                            <button type="submit" id="btn-add-worker" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 mt-2">
+                                <i class="fa-solid fa-plus-circle"></i> वर्कर लिस्ट करें
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column: Select Worker Box & Attendance Form -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <i class="fa-solid fa-clipboard-check text-blue-600"></i>
+                            <h2 class="text-lg font-bold text-gray-900">अटेंडेंस और ओवरटाइम अपडेट करें</h2>
+                        </div>
+
+                        <!-- Worker Dropdown Box -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">लिस्ट में से वर्कर चुनें (Select Worker):</label>
+                            <div class="relative">
+                                <select id="admin-worker-select" onchange="handleWorkerSelection()" class="w-full appearance-none bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 pr-10 font-medium cursor-pointer transition">
+                                    <option value="">-- डेटा लोड हो रहा है... --</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Form for Selected Worker -->
+                        <div id="selected-worker-form-container" class="hidden border-2 border-blue-100 bg-blue-50/30 rounded-2xl p-5 transition-all">
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-blue-100">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 id="sel-worker-name" class="text-lg font-bold text-gray-900">वर्कर का नाम</h3>
+                                        <span id="sel-worker-id" class="bg-blue-600 text-white text-xs font-mono font-bold px-2.5 py-0.5 rounded-md">ID</span>
+                                        <button type="button" onclick="copySelectedId()" title="ID कॉपी करें" class="text-gray-500 hover:text-blue-600 text-xs bg-white px-2 py-1 rounded border border-gray-200">
+                                            <i class="fa-regular fa-copy"></i> Copy ID
+                                        </button>
+                                    </div>
+                                    <p id="sel-worker-pos" class="text-xs text-gray-600 mt-1">पोजीशन</p>
+                                </div>
+
+                                <!-- Current Month Summary Badges -->
+                                <div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
+                                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg">Present: <strong id="sel-curr-present">0</strong></span>
+                                    <span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-lg">Absent: <strong id="sel-curr-absent">0</strong></span>
+                                    <span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg">OT: <strong id="sel-curr-ot">0h</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Update Controls -->
+                            <form onsubmit="submitSelectedWorkerAttendance(event)" class="pt-4 space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <!-- Attendance Radio Selection -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">आज की उपस्थिति (Attendance)</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center justify-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-gray-200 hover:border-emerald-400 transition">
+                                                <input type="radio" name="selected-att" value="present" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                                                <span class="text-sm font-bold text-emerald-700">Present (+1)</span>
+                                            </label>
+                                            <label class="flex items-center justify-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-gray-200 hover:border-rose-400 transition">
+                                                <input type="radio" name="selected-att" value="absent" class="text-rose-600 focus:ring-rose-500 w-4 h-4">
+                                                <span class="text-sm font-bold text-rose-700">Absent (+1)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Overtime Input -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">ओवरटाइम जोड़ें (घंटे में)</label>
+                                        <div class="relative">
+                                            <input type="number" id="selected-ot-input" min="0" max="24" step="0.5" value="0" class="w-full bg-white px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-base font-bold text-amber-700">
+                                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">घंटे (Hours)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+                                    <button type="button" onclick="deleteSelectedWorker()" class="w-full sm:w-auto text-xs text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-lg font-medium transition">
+                                        <i class="fa-solid fa-trash-can mr-1"></i> इस वर्कर को हटाएं
+                                    </button>
+                                    <button type="submit" id="btn-submit-att" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> लाइव सबमिट करें
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Empty State Placeholder -->
+                        <div id="no-worker-selected-msg" class="text-center py-10 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <i class="fa-solid fa-hand-pointer text-3xl text-gray-300 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-600">ऊपर दिए गए बॉक्स पर क्लिक करके किसी वर्कर को चुनें</p>
+                            <p class="text-xs text-gray-400 mt-1">चुनने के बाद यहाँ उसका प्रेजेंट, एब्सेंट और ओवरटाइम भरने का फॉर्म खुल जाएगा।</p>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK & Live App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Your Live Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWf2m_9KWGDxvMP_7ZoPeZdoQMrNpR4es",
+            authDomain: "worktrack-2f109.firebaseapp.com",
+            projectId: "worktrack-2f109",
+            storageBucket: "worktrack-2f109.firebasestorage.app",
+            messagingSenderId: "270307387944",
+            appId: "1:270307387944:web:2356815318c079624fa31d",
+            measurementId: "G-YBEK11Z0KY"
+        };
+
+        // Initialize Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const workersCol = collection(db, "workers");
+
+        // Admin PIN (आप इसे यहाँ बदल सकते हैं)
+        const ADMIN_PIN = "1234";
+        let workersList = [];
+
+        // Check if already unlocked in this session
+        if (sessionStorage.getItem("worktrack_admin_unlocked") === "true") {
+            unlockUI();
+        }
+
+        window.verifyAdminPin = function(e) {
+            e.preventDefault();
+            const entered = document.getElementById('admin-pin-input').value;
+            if (entered === ADMIN_PIN) {
+                sessionStorage.setItem("worktrack_admin_unlocked", "true");
+                unlockUI();
+                showToast("एडमिन पैनल अनलॉक हो गया!", "success");
+            } else {
+                showToast("गलत PIN! कृपया सही PIN डालें।", "error");
+                document.getElementById('admin-pin-input').value = "";
+            }
+        };
+
+        window.lockAdminPanel = function() {
+            sessionStorage.removeItem("worktrack_admin_unlocked");
+            document.getElementById('admin-main-app').classList.add('hidden');
+            document.getElementById('admin-lock-screen').classList.remove('hidden');
+            document.getElementById('admin-pin-input').value = "";
+        };
+
+        function unlockUI() {
+            document.getElementById('admin-lock-screen').classList.add('hidden');
+            document.getElementById('admin-main-app').classList.remove('hidden');
+            startRealtimeListener();
+        }
+
+        // Listen to Live Firebase Database in Real-time
+        function startRealtimeListener() {
+            const statusBadge = document.getElementById('db-status-badge');
+            
+            onSnapshot(workersCol, (snapshot) => {
+                workersList = [];
+                snapshot.forEach((docSnap) => {
+                    workersList.push(docSnap.data());
+                });
+
+                // Sort alphabetically by ID
+                workersList.sort((a, b) => a.id.localeCompare(b.id));
+
+                statusBadge.className = "text-[11px] font-semibold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1";
+                statusBadge.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-emerald-500"></i> Live Connected`;
+
+                populateWorkerDropdown();
+                updateStats();
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                statusBadge.className = "text-[11px] font-semibold bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full flex items-center gap-1";
+                statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> DB Error (Test Mode चेक करें)`;
+                showToast("डेटाबेस से जुड़ने में समस्या! Firestore में 'Start in test mode' चालू करें।", "error");
+            });
+        }
+
+        // Generate Auto ID
+        window.generateRandomId = function() {
+            const randomNum = Math.floor(101 + Math.random() * 898);
+            document.getElementById('worker-id').value = `EMP-${randomNum}`;
+        };
+
+        // Add New Worker to Live Firestore
+        window.handleAddWorker = async function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('worker-name').value.trim();
+            const position = document.getElementById('worker-position').value.trim();
+            const id = document.getElementById('worker-id').value.trim().toUpperCase();
+            const btn = document.getElementById('btn-add-worker');
+
+            // Check if ID already exists
+            if (workersList.some(w => w.id === id)) {
+                showToast(`ID "${id}" पहले से मौजूद है! दूसरी ID डालें।`, 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> सेव हो रहा है...`;
+
+            try {
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+                const newWorker = {
+                    id: id,
+                    name: name,
+                    position: position,
+                    monthKey: currentMonthKey,
+                    presentDays: 0,
+                    absentDays: 0,
+                    overtimeHours: 0,
+                    lastStatus: "नया जुड़ा (Newly Added)",
+                    lastUpdated: "अभी-अभी"
+                };
+
+                await setDoc(doc(db, "workers", id), newWorker);
+
+                document.getElementById('worker-name').value = '';
+                document.getElementById('worker-position').value = '';
+                document.getElementById('worker-id').value = '';
+
+                showToast(`वर्कर "${name}" (${id}) लाइव जुड़ गया!`, 'success');
+            } catch (err) {
+                console.error(err);
+                showToast("सेव करने में त्रुटि हुई। इंटरनेट या Firebase सेटिंग चेक करें।", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> वर्कर लिस्ट करें`;
+            }
+        };
+
+        // Populate Dropdown Box
+        function populateWorkerDropdown() {
+            const selectBox = document.getElementById('admin-worker-select');
+            const currentVal = selectBox.value;
+            
+            let optionsHtml = `<option value="">-- यहाँ क्लिक करके वर्कर का नाम और ID चुनें (${workersList.length} वर्कर) --</option>`;
+            
+            workersList.forEach(worker => {
+                const isSelected = worker.id === currentVal ? 'selected' : '';
+                optionsHtml += `<option value="${worker.id}" ${isSelected}>${worker.id} - ${worker.name} (${worker.position})</option>`;
+            });
+            
+            selectBox.innerHTML = optionsHtml;
+            handleWorkerSelection();
+        }
+
+        // Handle Dropdown Selection
+        window.handleWorkerSelection = function() {
+            const selectBox = document.getElementById('admin-worker-select');
+            const selectedId = selectBox.value;
+            const formContainer = document.getElementById('selected-worker-form-container');
+            const emptyMsg = document.getElementById('no-worker-selected-msg');
+
+            if (!selectedId) {
+                formContainer.classList.add('hidden');
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+
+            const worker = workersList.find(w => w.id === selectedId);
+            if (!worker) return;
+
+            // Check if month has changed since last update (Auto-reset for new month)
+            const now = new Date();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const isSameMonth = worker.monthKey === currentMonthKey;
+
+            document.getElementById('sel-worker-name').innerText = worker.name;
+            document.getElementById('sel-worker-id').innerText = worker.id;
+            document.getElementById('sel-worker-pos').innerText = worker.position;
+            
+            document.getElementById('sel-curr-present').innerText = isSameMonth ? worker.presentDays : 0;
+            document.getElementById('sel-curr-absent').innerText = isSameMonth ? worker.absentDays : 0;
+            document.getElementById('sel-curr-ot').innerText = isSameMonth ? `${worker.overtimeHours}h` : '0h';
+
+            emptyMsg.classList.add('hidden');
+            formContainer.classList.remove('hidden');
+        };
+
+        // Submit Attendance & Overtime to Live Firebase
+        window.submitSelectedWorkerAttendance = async function(event) {
+            event.preventDefault();
+            
+            const selectBox = document.getElementById('admin-worker-select');
+            const workerId = selectBox.value;
+            const worker = workersList.find(w => w.id === workerId);
+            if (!worker) return;
+
+            const selectedStatus = document.querySelector('input[name="selected-att"]:checked').value;
+            const addedOt = parseFloat(document.getElementById('selected-ot-input').value) || 0;
+            const btn = document.getElementById('btn-submit-att');
+
+            if (addedOt < 0) {
+                showToast("ओवरटाइम 0 से कम नहीं हो सकता!", "error");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> अपडेट हो रहा है...`;
+
+            try {
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const isSameMonth = worker.monthKey === currentMonthKey;
+
+                // Start fresh if it's a new month, otherwise add to current month
+                let newPresent = isSameMonth ? (worker.presentDays || 0) : 0;
+                let newAbsent = isSameMonth ? (worker.absentDays || 0) : 0;
+                let newOt = isSameMonth ? (worker.overtimeHours || 0) : 0;
+
+                let statusText = "";
+                if (selectedStatus === 'present') {
+                    newPresent += 1;
+                    statusText = "Present";
+                } else {
+                    newAbsent += 1;
+                    statusText = "Absent";
+                }
+
+                if (addedOt > 0) {
+                    newOt += addedOt;
+                    statusText += ` (+${addedOt} hrs OT)`;
+                }
+
+                const dateStr = now.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+                const timeStr = now.toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' });
+
+                await updateDoc(doc(db, "workers", workerId), {
+                    monthKey: currentMonthKey,
+                    presentDays: newPresent,
+                    absentDays: newAbsent,
+                    overtimeHours: newOt,
+                    lastStatus: statusText,
+                    lastUpdated: `${dateStr}, ${timeStr}`
+                });
+
+                showToast(`${worker.name} (${worker.id}) का डेटा लाइव अपडेट हो गया!`, 'success');
+                
+                // Reset dropdown & form for next entry
+                document.getElementById('selected-ot-input').value = 0;
+                document.querySelector('input[name="selected-att"][value="present"]').checked = true;
+                selectBox.value = "";
+                handleWorkerSelection();
+            } catch (err) {
+                console.error(err);
+                showToast("अपडेट करने में समस्या हुई!", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> लाइव सबमिट करें`;
+            }
+        };
+
+        // Delete Worker
+        window.deleteSelectedWorker = async function() {
+            const workerId = document.getElementById('admin-worker-select').value;
+            if (!workerId) return;
+
+            try {
+                await deleteDoc(doc(db, "workers", workerId));
+                document.getElementById('admin-worker-select').value = "";
+                handleWorkerSelection();
+                showToast(`वर्कर (${workerId}) हटा दिया गया।`, 'info');
+            } catch (err) {
+                showToast("हटाने में समस्या हुई!", "error");
+            }
+        };
+
+        // Update Top Stats (Current Month Only)
+        function updateStats() {
+            const now = new Date();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            document.getElementById('stat-total-workers').innerText = workersList.length;
+            
+            const totalPresent = workersList.reduce((sum, w) => sum + (w.monthKey === currentMonthKey ? (w.presentDays || 0) : 0), 0);
+            document.getElementById('stat-total-present').innerText = totalPresent;
+
+            const totalOt = workersList.reduce((sum, w) => sum + (w.monthKey === currentMonthKey ? (w.overtimeHours || 0) : 0), 0);
+            document.getElementById('stat-total-overtime').innerText = `${totalOt} hrs`;
+        }
+
+        // Copy ID Helper
+        window.copySelectedId = function() {
+            const idText = document.getElementById('sel-worker-id').innerText;
+            const tempInput = document.createElement("input");
+            tempInput.value = idText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showToast(`ID "${idText}" कॉपी हो गई!`, 'info');
+        };
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-gray-900 text-white";
+            let icon = "fa-circle-check text-emerald-400";
+            
+            if (type === 'error') {
+                bgClass = "bg-rose-600 text-white";
+                icon = "fa-circle-exclamation text-white";
+            } else if (type === 'info') {
+                bgClass = "bg-blue-600 text-white";
+                icon = "fa-circle-info text-white";
+            }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2.5 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
